@@ -1,0 +1,65 @@
+#Cálculo de la distribución de Fermi Dirac para un Gas de n electrones por 
+#unidad de volumen a una temperatura T=300K
+
+#Cálculo del potencial químico
+from matplotlib import pyplot
+import numpy as np
+from math import log,pi,sqrt,exp,cos
+#Definición de variables
+n=1.0e18                         #densidad de electrones (cm-3)
+k=300                            # Temperatura absoluta
+e=1.60219                        # carga del electron (Cx10 19)
+h= 1.0545928                     #Constante de planck (J s x 10´34)
+kB=8.617e-5                      #Constante de Boltzmann (eV k-1)
+m0=9.10956
+m1=0.07                          #masa efectiva del electrón
+kFI=(3.0*(pi**2)*n)**(1/3)       # Vector de onda de Fermi
+eF=1.0e-11*(((h*kFI)**2)/(2*m0*m1*e))# Energia de Fermy(meV)
+kBT=1000*k*kB                    #Energia térmica(meV)
+beta=1/kBT                       #Inverso de la energía térmica
+mumax=eF                         #Maximo valor posible del potencial quimico
+x=((n*1.0e6)/2)*(((2.0e-15*pi*beta*(h**2))/(e*m0*m1))**1.5)
+mumin=(1/beta)*log(x)           #Potencial químico minímo
+emax=eF+(15/beta)               #Limite máximo de integración
+const=1.0e16*((20*e*m1*m0)**(1/2))*e*m1*m0/((pi**2)*(h**3))
+from scipy.integrate import quad
+
+for j in range (1,100):
+            mu1=mumin+((mumax-mumin)/2)  #Por cada iteración se modifica el valor del potencial químico dependiendo de la condición que se cumpla
+            f=lambda energy:(sqrt(energy))*(1/((exp((energy-mu1)*beta))+1)) #Se utiizó el modulo scipy para integrar  
+            Integral, _ = quad(f, 0, emax)
+            nprime=const*Integral                   #Se multiplica por la constante para obtener la densidad n' de acuerdo a la fórmula que se tiene
+            delta=((n-nprime)/n)
+            if abs(delta) < 0.000000000001:         # Se elige un eror del 0.00000000001%
+                break
+            elif delta > 0:                         # Si delta>0 entonces hay que acortar el
+                                                    # intervalo aumentando el valor de mumin a mu1
+                mumin=mu1
+            else:                                   # Si delta<0 entonces hay que acortar el
+                                                    # intervalo disminuyendo el valor de mumin a mu1
+                mumax=mu1
+print("El potencial quimico es",mu1,"meV")          # Se imprime el potencial químico para el gas
+mu2=eF-(((pi*kBT)**2)/(12*eF))                      # mu2 es el valor del potencil químico obtenido 
+                                                    # mediante la aproximación que se hizo analíticamente.
+print("Potencial quimico a 2do orden",mu2)
+
+#Al conocer el potencial químico ya se puede conocer la distribución Fermi-Dirac
+#En esta parte se gráfica la distribución para T=300K utilizando el potencial químico obtenido por el programa
+#Y el obtenido analiticamente. Además se muestra la distribución para T=0K que fue calculada analíticamente.
+def g(x):
+    return 1/(np.exp((x-mu1)*beta)+1)
+def h(x):
+    return 1 
+def k(x):
+    return 1/(np.exp((x-mu2)*beta)+1)
+x=range(0,200)
+y=range(0,52)
+pyplot.plot(x,[g(i)for i in x],label="T=300K")
+pyplot.plot(y,[h(i)for i in y],label="T=0k")
+pyplot.plot(x,[k(i)for i in x],label="T=300k(analíticamente")
+pyplot.xlim(0,200)
+pyplot.ylim(0,1.25)
+pyplot.xlabel("Energia(meV)")
+pyplot.ylabel("Probabilidad de ocupación")
+pyplot.legend()
+pyplot.show()
